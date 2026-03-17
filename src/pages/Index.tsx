@@ -12,24 +12,22 @@ import Footer from "@/components/Footer";
 const ease = [0.16, 1, 0.3, 1] as const;
 
 function HeroSection() {
-  const [url, setUrl] = useState("https://scanovax.com");
-
   return (
-    <section className="section-padding pt-[20vh]">
-      <div className="container grid lg:grid-cols-2 gap-12 items-center">
+    <section className="section-padding pt-[25vh] pb-20">
+      <div className="container flex flex-col items-center text-center">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease }}
+          className="max-w-2xl"
         >
-          <p className="label-caps text-primary mb-4">Precision QR Platform</p>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.1] mb-6">
-            Precision Routing for the Physical World
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-semibold leading-[1.1] mb-6">
+            ScanovaX
           </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-lg">
-            Create smart QR codes with powerful insights. Track every scan, customize every pixel, deploy in seconds.
+          <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-10 max-w-xl mx-auto">
+            Create Smart QR Codes with Powerful Insights. Track every scan, customize every pixel, deploy in seconds.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               to="/generator"
               className="inline-flex items-center justify-center gap-2 bg-foreground text-background px-6 py-3 rounded-lg font-medium hover:opacity-90 btn-press"
@@ -44,52 +42,12 @@ function HeroSection() {
             </Link>
           </div>
 
-          <div className="flex items-center gap-6 mt-10 font-mono text-sm text-muted-foreground">
+          <div className="flex items-center gap-6 mt-10 font-mono text-sm text-muted-foreground justify-center">
             <span className="tabular-nums">14,892 Scans</span>
             <span className="w-1 h-1 rounded-full bg-border" />
             <span className="tabular-nums">99.9% Uptime</span>
             <span className="w-1 h-1 rounded-full bg-border" />
             <span className="tabular-nums">12ms Redirect</span>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease, delay: 0.2 }}
-          className="flex justify-center"
-        >
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-lg w-full max-w-sm">
-            <p className="label-caps text-muted-foreground mb-3">Try it now</p>
-            <input
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Paste a URL..."
-              className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm mb-5 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow"
-            />
-            <div className="flex justify-center p-6 bg-background rounded-xl border border-border">
-              <motion.div
-                key={url}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, ease }}
-              >
-                <QRCodeSVG
-                  value={url || "https://scanovax.com"}
-                  size={180}
-                  level="M"
-                  bgColor="transparent"
-                  fgColor="hsl(222, 47%, 11%)"
-                />
-              </motion.div>
-            </div>
-            <Link
-              to="/generator"
-              className="mt-5 w-full inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 btn-press"
-            >
-              Customize <Palette className="w-4 h-4" />
-            </Link>
           </div>
         </motion.div>
       </div>
