@@ -268,7 +268,6 @@ export default function Generator() {
           </div>
         </div>
       </div>
-      <Footer />
-    </div>
+    </DashboardLayout>
   );
 }
