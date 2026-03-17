@@ -265,7 +265,6 @@ export default function Generator() {
                 </div>
               </div>
             </motion.div>
-          </div>
         </div>
       </div>
     </DashboardLayout>
