@@ -48,10 +48,8 @@ export default function Generator() {
   const ecLevel = errorLevel.charAt(0) as "L" | "M" | "Q" | "H";
 
   return (
-    <div className="min-h-screen">
-      <Header />
-      <div className="pt-24 pb-16">
-        <div className="container">
+    <DashboardLayout>
+      <div>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
