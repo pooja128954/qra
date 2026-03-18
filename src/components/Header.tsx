@@ -42,7 +42,7 @@ export default function Header() {
             Login
           </Link>
           <Link
-            to="/generator"
+            to="/dashboard/qr-generator"
             className="inline-flex items-center gap-2 bg-foreground text-background px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 btn-press"
           >
             Create QR
@@ -81,7 +81,7 @@ export default function Header() {
                 Login
               </Link>
               <Link
-                to="/generator"
+                to="/dashboard/qr-generator"
                 className="inline-flex items-center justify-center bg-foreground text-background px-5 py-2.5 rounded-lg text-sm font-medium btn-press"
                 onClick={() => setMobileOpen(false)}
               >
