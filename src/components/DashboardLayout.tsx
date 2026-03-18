@@ -1,5 +1,5 @@
 import { useLocation, Link } from "react-router-dom";
-import { QrCode, BarChart3, User, LogOut, Menu, Home } from "lucide-react";
+import { QrCode, BarChart3, User, LogOut, Menu } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -16,7 +16,6 @@ import {
 import { NavLink } from "@/components/NavLink";
 
 const sidebarLinks = [
-  { label: "Home", to: "/", icon: Home },
   { label: "Profile", to: "/dashboard/profile", icon: User },
   { label: "QR Generator", to: "/dashboard/qr-generator", icon: QrCode },
   { label: "Analytics", to: "/dashboard/analytics", icon: BarChart3 },
