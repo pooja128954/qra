@@ -20,7 +20,7 @@ export default function Footer() {
         <div>
           <h4 className="label-caps text-muted-foreground mb-4">Product</h4>
           <ul className="space-y-2.5 text-sm">
-            <li><Link to="/generator" className="text-muted-foreground hover:text-foreground transition-colors">Generator</Link></li>
+            <li><Link to="/dashboard/qr-generator" className="text-muted-foreground hover:text-foreground transition-colors">Generator</Link></li>
             <li><Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</Link></li>
             <li><Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link></li>
           </ul>

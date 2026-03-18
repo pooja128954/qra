@@ -23,7 +23,7 @@ export default function MyCodes() {
             <h1 className="text-2xl font-semibold mb-1">My QR Codes</h1>
             <p className="text-sm text-muted-foreground">{codes.length} codes total</p>
           </div>
-          <Link to="/generator" className="inline-flex items-center gap-2 bg-foreground text-background px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 btn-press">
+          <Link to="/dashboard/qr-generator" className="inline-flex items-center gap-2 bg-foreground text-background px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 btn-press">
             <Plus className="w-4 h-4" /> Create QR
           </Link>
         </div>
