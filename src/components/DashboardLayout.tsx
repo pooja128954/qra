@@ -1,4 +1,4 @@
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { QrCode, BarChart3, User, LogOut, Menu } from "lucide-react";
 import {
   Sidebar,
@@ -14,6 +14,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
+import { useAuth } from "@/context/AuthContext";
 
 const sidebarLinks = [
   { label: "Profile", to: "/dashboard/profile", icon: User },
@@ -24,7 +25,13 @@ const sidebarLinks = [
 function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
@@ -62,13 +69,13 @@ function AppSidebar() {
       </SidebarContent>
 
       <div className="mt-auto border-t border-border p-3">
-        <Link
-          to="/"
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors w-full"
         >
           <LogOut className="h-4 w-4 shrink-0" />
           {!collapsed && <span>Logout</span>}
-        </Link>
+        </button>
       </div>
     </Sidebar>
   );

@@ -1,16 +1,30 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { QrCode, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/context/AuthContext";
 
-const navLinks = [
-  { label: "Home", to: "/" },
-  { label: "Features", to: "/#features" },
-  { label: "Pricing", to: "/pricing" },
-];
+const ease = [0.16, 1, 0.3, 1] as const;
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { isLoggedIn } = useAuth();
+  const navigate = useNavigate();
+
+  const createQrDest = isLoggedIn ? "/dashboard/qr-generator" : "/login";
+
+  const handleFeaturesClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setMobileOpen(false);
+    if (window.location.pathname !== "/") {
+      navigate("/");
+      setTimeout(() => {
+        document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    } else {
+      document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass-panel border-b">
@@ -23,36 +37,28 @@ export default function Header() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
-          {navLinks.map((l) => (
-            <Link
-              key={l.label}
-              to={l.to}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {l.label}
-            </Link>
-          ))}
+          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Home</Link>
+          <a href="/#features" onClick={handleFeaturesClick} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
+          <Link to="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
-          <Link
-            to="/login"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Login
-          </Link>
-          <Link
-            to="/dashboard/qr-generator"
-            className="inline-flex items-center gap-2 bg-foreground text-background px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 btn-press"
-          >
-            Create QR
-          </Link>
+          {isLoggedIn ? (
+            <Link
+              to="/dashboard/qr-generator"
+              className="inline-flex items-center gap-2 bg-foreground text-background px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 btn-press"
+            >
+              Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Login</Link>
+              <Link to={createQrDest} className="inline-flex items-center gap-2 bg-foreground text-background px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 btn-press">Create QR</Link>
+            </>
+          )}
         </div>
 
-        <button
-          className="md:hidden p-2"
-          onClick={() => setMobileOpen(!mobileOpen)}
-        >
+        <button className="md:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)}>
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
@@ -67,26 +73,17 @@ export default function Header() {
             className="md:hidden overflow-hidden border-t border-border bg-card"
           >
             <div className="container py-4 flex flex-col gap-3">
-              {navLinks.map((l) => (
-                <Link
-                  key={l.label}
-                  to={l.to}
-                  className="text-sm py-2"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {l.label}
-                </Link>
-              ))}
-              <Link to="/login" className="text-sm py-2" onClick={() => setMobileOpen(false)}>
-                Login
-              </Link>
-              <Link
-                to="/dashboard/qr-generator"
-                className="inline-flex items-center justify-center bg-foreground text-background px-5 py-2.5 rounded-lg text-sm font-medium btn-press"
-                onClick={() => setMobileOpen(false)}
-              >
-                Create QR
-              </Link>
+              <Link to="/" className="text-sm py-2" onClick={() => setMobileOpen(false)}>Home</Link>
+              <a href="/#features" className="text-sm py-2" onClick={handleFeaturesClick}>Features</a>
+              <Link to="/pricing" className="text-sm py-2" onClick={() => setMobileOpen(false)}>Pricing</Link>
+              {isLoggedIn ? (
+                <Link to="/dashboard/qr-generator" className="inline-flex items-center justify-center bg-foreground text-background px-5 py-2.5 rounded-lg text-sm font-medium btn-press" onClick={() => setMobileOpen(false)}>Dashboard</Link>
+              ) : (
+                <>
+                  <Link to="/login" className="text-sm py-2" onClick={() => setMobileOpen(false)}>Login</Link>
+                  <Link to="/login" className="inline-flex items-center justify-center bg-foreground text-background px-5 py-2.5 rounded-lg text-sm font-medium btn-press" onClick={() => setMobileOpen(false)}>Create QR</Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}

@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Mail, Lock, User, QrCode } from "lucide-react";
 import Header from "@/components/Header";
+import { useAuth } from "@/context/AuthContext";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -10,6 +11,14 @@ export default function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const { register } = useAuth();
+  const navigate = useNavigate();
+
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    register();
+    navigate("/dashboard/qr-generator");
+  };
 
   return (
     <div className="min-h-screen">
@@ -29,7 +38,7 @@ export default function Register() {
             <p className="text-sm text-muted-foreground">Start creating smart QR codes today</p>
           </div>
 
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-4" onSubmit={handleRegister}>
             <div>
               <label className="label-caps text-muted-foreground mb-1.5 block">Full Name</label>
               <div className="relative">
@@ -54,11 +63,9 @@ export default function Register() {
                   className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow" />
               </div>
             </div>
-            <Link to="/dashboard/profile">
-              <button type="button" className="w-full bg-foreground text-background py-3 rounded-lg font-medium hover:opacity-90 btn-press mt-2">
-                Create Account
-              </button>
-            </Link>
+            <button type="submit" className="w-full bg-foreground text-background py-3 rounded-lg font-medium hover:opacity-90 btn-press mt-2">
+              Create Account
+            </button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground mt-6">

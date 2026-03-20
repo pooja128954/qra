@@ -6,10 +6,14 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/context/AuthContext";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
 function HeroSection() {
+  const { isLoggedIn } = useAuth();
+  const ctaDest = isLoggedIn ? "/dashboard/qr-generator" : "/login";
+
   return (
     <section className="section-padding pt-[25vh] pb-20">
       <div className="container flex flex-col items-center text-center">
@@ -27,7 +31,7 @@ function HeroSection() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
-              to="/dashboard/qr-generator"
+              to={ctaDest}
               className="inline-flex items-center justify-center gap-2 bg-foreground text-background px-6 py-3 rounded-lg font-medium hover:opacity-90 btn-press"
             >
               Get Started <ArrowRight className="w-4 h-4" />
@@ -154,6 +158,8 @@ function PricingPreview() {
     { name: "Enterprise", price: "Custom", period: "", features: ["Everything in Pro", "SSO & Teams", "API Access", "SLA Guarantee", "Dedicated Support"], cta: "Contact Sales", highlight: false },
   ];
 
+  const { isLoggedIn } = useAuth();
+
   return (
     <section className="section-padding bg-card border-y border-border">
       <div className="container">
@@ -202,7 +208,7 @@ function PricingPreview() {
                 ))}
               </ul>
               <Link
-                to={p.highlight ? "/register" : "/pricing"}
+                to={p.highlight ? (isLoggedIn ? "/dashboard/qr-generator" : "/register") : "/pricing"}
                 className={`w-full inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-sm font-medium btn-press transition-colors ${
                   p.highlight
                     ? "bg-foreground text-background hover:opacity-90"
@@ -220,6 +226,9 @@ function PricingPreview() {
 }
 
 function CTASection() {
+  const { isLoggedIn } = useAuth();
+  const ctaDest = isLoggedIn ? "/dashboard/qr-generator" : "/login";
+
   return (
     <section className="section-padding">
       <div className="container">
@@ -237,7 +246,7 @@ function CTASection() {
             Join thousands of teams using ScanovaX to bridge physical and digital experiences.
           </p>
           <Link
-            to="/dashboard/qr-generator"
+            to={ctaDest}
             className="inline-flex items-center gap-2 bg-foreground text-background px-8 py-3.5 rounded-lg font-medium hover:opacity-90 btn-press text-base"
           >
             Create Your First QR <ArrowRight className="w-4 h-4" />

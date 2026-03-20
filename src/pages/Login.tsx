@@ -1,14 +1,23 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Mail, Lock, QrCode } from "lucide-react";
 import Header from "@/components/Header";
+import { useAuth } from "@/context/AuthContext";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    login();
+    navigate("/dashboard/qr-generator");
+  };
 
   return (
     <div className="min-h-screen">
@@ -28,7 +37,7 @@ export default function Login() {
             <p className="text-sm text-muted-foreground">Sign in to your ScanovaX account</p>
           </div>
 
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-4" onSubmit={handleLogin}>
             <div>
               <label className="label-caps text-muted-foreground mb-1.5 block">Email</label>
               <div className="relative">
@@ -55,14 +64,12 @@ export default function Login() {
                 />
               </div>
             </div>
-            <Link to="/dashboard/qr-generator">
-              <button
-                type="button"
-                className="w-full bg-foreground text-background py-3 rounded-lg font-medium hover:opacity-90 btn-press mt-2"
-              >
-                Sign In
-              </button>
-            </Link>
+            <button
+              type="submit"
+              className="w-full bg-foreground text-background py-3 rounded-lg font-medium hover:opacity-90 btn-press mt-2"
+            >
+              Sign In
+            </button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
