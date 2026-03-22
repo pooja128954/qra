@@ -187,9 +187,11 @@ export default function MyCodes() {
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold tabular-nums">{c.scan_count.toLocaleString()} scans</span>
                         <div className="flex gap-1">
-                          <Link to={`/dashboard/qr-generator?edit=${c.id}`} className="p-1.5 rounded-md hover:bg-accent transition-colors" title="Edit">
-                            <Pencil className="w-3.5 h-3.5" />
-                          </Link>
+                          {limits.editable && (
+                            <Link to={`/dashboard/qr-generator?edit=${c.id}`} className="p-1.5 rounded-md hover:bg-accent transition-colors" title="Edit">
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Link>
+                          )}
 
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -208,9 +210,11 @@ export default function MyCodes() {
                             </DropdownMenuContent>
                           </DropdownMenu>
 
-                          <Link to={`/dashboard/analytics?qrId=${c.id}`} className="p-1.5 rounded-md hover:bg-accent transition-colors block" title="Analytics">
-                            <BarChart className="w-3.5 h-3.5" />
-                          </Link>
+                          {limits.analytics !== "none" && (
+                            <Link to={`/dashboard/analytics?qrId=${c.id}`} className="p-1.5 rounded-md hover:bg-accent transition-colors block" title="Analytics">
+                              <BarChart className="w-3.5 h-3.5" />
+                            </Link>
+                          )}
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDelete(c.id); }}
                             disabled={isDeleting && deletingId === c.id}

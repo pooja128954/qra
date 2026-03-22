@@ -62,10 +62,18 @@ export default function Generator() {
   const [errorLevel, setErrorLevel] = useState("M (15%)");
 
   const { codes, createQrCode, isCreating, updateQrCode } = useQrCodes();
-  const { limits } = usePlan();
+  const { limits, effectivePlan } = usePlan();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("edit");
+
+  // Check if editing is allowed
+  const canEdit = limits.editable;
+  if (editId && !canEdit) {
+    toast.error("Your plan does not allow editing QR codes. Upgrade to unlock this feature.");
+    navigate("/dashboard/qr-generator");
+    return null;
+  }
 
   const trackingIdRef = useRef(crypto.randomUUID());
 
@@ -201,8 +209,13 @@ export default function Generator() {
       qrCodeInstance.current.append(qrRef.current);
     }
 
-    const safeFgColor = limits.canCustomize ? fgColor : "#0f172a";
-    const safeBgColor = limits.canCustomize ? bgColor : "#ffffff";
+    const safeFgColor = limits.customization !== "none" ? fgColor : "#0f172a";
+    const safeBgColor = limits.customization !== "none" ? bgColor : "#ffffff";
+    const safeShape = limits.customization !== "none" ? selectedShape : "Square";
+    const safeFrame = limits.customization === "full" ? selectedFrame : "None";
+    const safeEcLevel = limits.customization === "full" ? ecLevel : "M (15%)";
+    const safeLogo = limits.logoUpload ? (base64Logo || logoFile) : undefined;
+
     const shapeMap: Record<string, DotType> = {
       "Square": "square",
       "Rounded": "rounded",
@@ -214,25 +227,25 @@ export default function Generator() {
       data: qrValue || "https://scanovax.com",
       dotsOptions: {
         color: safeFgColor,
-        type: shapeMap[selectedShape] || "square"
+        type: shapeMap[safeShape] || "square"
       },
       cornersSquareOptions: {
         color: safeFgColor,
-        type: selectedShape === "Dots" ? "dot" : selectedShape === "Rounded" ? "extra-rounded" : "square"
+        type: safeShape === "Dots" ? "dot" : safeShape === "Rounded" ? "extra-rounded" : "square"
       },
       backgroundOptions: {
         color: safeBgColor
       },
       qrOptions: {
-        errorCorrectionLevel: ecLevel
+        errorCorrectionLevel: safeEcLevel.charAt(0) as ErrorCorrectionLevel
       },
-      image: base64Logo || logoFile,
+      image: safeLogo,
       imageOptions: {
         margin: 0,
         imageSize: 0.45
       }
     });
-  }, [qrValue, fgColor, bgColor, selectedShape, ecLevel, limits.canCustomize, logoFile, base64Logo, qrRef.current]);
+  }, [qrValue, fgColor, bgColor, selectedShape, ecLevel, limits.customization, limits.logoUpload, logoFile, base64Logo, qrRef.current]);
 
   const handleSave = async () => {
     if (!editId && isLimitReached) {
@@ -272,12 +285,12 @@ export default function Generator() {
       name: qrName || inputValue.slice(0, 40) || "Untitled QR",
       type: activeType,
       content: inputValue,
-      fg_color: limits.canCustomize ? fgColor : "#0f172a",
-      bg_color: limits.canCustomize ? bgColor : "#ffffff",
-      ec_level: ecLevel,
-      frame: selectedFrame,
-      shape: selectedShape,
-      logo_url: finalLogoUrl?.startsWith("http") ? finalLogoUrl : null,
+      fg_color: limits.customization !== "none" ? fgColor : "#0f172a",
+      bg_color: limits.customization !== "none" ? bgColor : "#ffffff",
+      ec_level: limits.customization === "full" ? ecLevel : "M (15%)",
+      frame: limits.customization === "full" ? selectedFrame : "None",
+      shape: limits.customization !== "none" ? selectedShape : "Square",
+      logo_url: (limits.logoUpload && finalLogoUrl?.startsWith("http")) ? finalLogoUrl : null,
     };
 
     if (editId) {
@@ -511,10 +524,10 @@ export default function Generator() {
 
             {/* Customization */}
             <div className="grid sm:grid-cols-2 gap-6 relative">
-              {!limits.canCustomize && <LockedOverlay title="Custom Colors Locked" onUpgrade={handleUpgrade} />}
+              {limits.customization === "none" && <LockedOverlay title="Customization Locked" onUpgrade={handleUpgrade} />}
 
               {/* Colors */}
-              <div className={!limits.canCustomize ? "opacity-50 pointer-events-none filter blur-[1px]" : ""}>
+              <div className={limits.customization === "none" ? "opacity-50 pointer-events-none filter blur-[1px]" : ""}>
                 <h3 className="label-caps text-muted-foreground mb-3 flex items-center gap-2">
                   <Pipette className="w-3.5 h-3.5" /> Colors
                 </h3>
@@ -537,7 +550,7 @@ export default function Generator() {
               </div>
 
               {/* Shape */}
-              <div>
+              <div className={limits.customization === "none" ? "opacity-50 pointer-events-none filter blur-[1px]" : ""}>
                 <h3 className="label-caps text-muted-foreground mb-3 flex items-center gap-2">
                   <Palette className="w-3.5 h-3.5" /> Shape
                 </h3>
@@ -551,38 +564,44 @@ export default function Generator() {
               </div>
 
               {/* Frame */}
-              <div>
-                <h3 className="label-caps text-muted-foreground mb-3 flex items-center gap-2">
-                  <Square className="w-3.5 h-3.5" /> Frame
-                </h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {frames.map((f) => (
-                    <button key={f} onClick={() => setSelectedFrame(f)}
-                      className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all btn-press ${selectedFrame === f ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:text-foreground"
-                        }`}>{f}</button>
-                  ))}
+              <div className={limits.customization !== "full" ? "relative" : ""}>
+                {limits.customization !== "full" && <LockedOverlay title="Frame Customization Locked" onUpgrade={handleUpgrade} />}
+                <div className={limits.customization !== "full" ? "opacity-50 pointer-events-none filter blur-[1px]" : ""}>
+                  <h3 className="label-caps text-muted-foreground mb-3 flex items-center gap-2">
+                    <Square className="w-3.5 h-3.5" /> Frame
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {frames.map((f) => (
+                      <button key={f} onClick={() => setSelectedFrame(f)}
+                        className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all btn-press ${selectedFrame === f ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:text-foreground"
+                          }`}>{f}</button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
               {/* Error Correction */}
-              <div>
-                <h3 className="label-caps text-muted-foreground mb-3 flex items-center gap-2">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Error Correction
-                </h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {corrections.map((c) => (
-                    <button key={c} onClick={() => setErrorLevel(c)}
-                      className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all btn-press ${errorLevel === c ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:text-foreground"
-                        }`}>{c}</button>
-                  ))}
+              <div className={limits.customization !== "full" ? "relative" : ""}>
+                {limits.customization !== "full" && <LockedOverlay title="Error Correction Locked" onUpgrade={handleUpgrade} />}
+                <div className={limits.customization !== "full" ? "opacity-50 pointer-events-none filter blur-[1px]" : ""}>
+                  <h3 className="label-caps text-muted-foreground mb-3 flex items-center gap-2">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Error Correction
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {corrections.map((c) => (
+                      <button key={c} onClick={() => setErrorLevel(c)}
+                        className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all btn-press ${errorLevel === c ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:text-foreground"
+                          }`}>{c}</button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Logo Upload */}
             <div className="relative">
-              {!limits.canCustomize && <LockedOverlay title="Custom Logo Locked" onUpgrade={handleUpgrade} />}
-              <div className={!limits.canCustomize ? "opacity-50 pointer-events-none filter blur-[1px]" : ""}>
+              {!limits.logoUpload && <LockedOverlay title="Logo Upload Locked" onUpgrade={handleUpgrade} />}
+              <div className={!limits.logoUpload ? "opacity-50 pointer-events-none filter blur-[1px]" : ""}>
                 <h3 className="label-caps text-muted-foreground mb-3 flex items-center gap-2">
                   <Upload className="w-3.5 h-3.5" /> Logo Upload
                 </h3>

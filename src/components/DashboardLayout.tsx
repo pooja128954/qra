@@ -15,20 +15,22 @@ import {
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/context/AuthContext";
-
-const sidebarLinks = [
-  { label: "Home", to: "/", icon: Home },
-  { label: "Profile", to: "/dashboard/profile", icon: User },
-  { label: "QR Generator", to: "/dashboard/qr-generator", icon: QrCode },
-  { label: "My QR Codes", to: "/dashboard/codes", icon: QrCode },
-  { label: "Analytics", to: "/dashboard/analytics", icon: BarChart3 },
-];
+import { usePlan } from "@/hooks/usePlan";
 
 function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const { limits } = usePlan();
+
+  const sidebarLinks = [
+    { label: "Home", to: "/", icon: Home },
+    { label: "Profile", to: "/dashboard/profile", icon: User },
+    { label: "QR Generator", to: "/dashboard/qr-generator", icon: QrCode },
+    { label: "My QR Codes", to: "/dashboard/codes", icon: QrCode },
+    ...(limits.analytics !== "none" ? [{ label: "Analytics", to: "/dashboard/analytics", icon: BarChart3 }] : []),
+  ];
 
   const handleLogout = () => {
     logout();

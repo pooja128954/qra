@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { usePlan } from "@/hooks/usePlan";
 
 interface ScanStats {
   totalScans: number;
@@ -23,9 +24,10 @@ interface TopCode {
 
 export function useScanStats(qrId?: string) {
   const { user } = useAuth();
+  const { limits } = usePlan();
 
   return useQuery<ScanStats>({
-    queryKey: ["scan_stats", user?.id, qrId],
+    queryKey: ["scan_stats", user?.id, qrId, limits.analytics],
     enabled: !!user,
     queryFn: async () => {
       let ids: string[] = [];
@@ -52,10 +54,19 @@ export function useScanStats(qrId?: string) {
       }
 
       // Fetch scan events for those codes (for unique and geo stats)
-      const { data: events } = await supabase
+      let query = supabase
         .from("scan_events")
         .select("id, device_type, country, user_identifier")
-        .in("qr_code_id", ids) as unknown as { data: { id: string, device_type: string | null, country: string | null, user_identifier: string | null }[] | null };
+        .in("qr_code_id", ids);
+
+      // For basic analytics (premium plan), limit to last 7 days
+      if (limits.analytics === "basic") {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        query = query.gte("scanned_at", sevenDaysAgo.toISOString());
+      }
+
+      const { data: events } = await query as unknown as { data: { id: string, device_type: string | null, country: string | null, user_identifier: string | null }[] | null };
 
       // Total scans should count all events, including repeated scans from same user
       const total = events?.length ?? 0;
@@ -166,16 +177,17 @@ export function useWeeklyScans(qrId?: string) {
 
 export function useTopCodes(limit = 4) {
   const { user } = useAuth();
+  const { limits } = usePlan();
 
   return useQuery<TopCode[]>({
-    queryKey: ["top_codes", user?.id],
+    queryKey: ["top_codes", user?.id, limits.analytics],
     enabled: !!user,
     queryFn: async () => {
       // Get QR codes owned by user
       const { data: qrCodes, error: qrError } = await supabase
         .from("qr_codes")
         .select("id, name")
-        .eq("user_id", user?.id) as unknown as { data: { id: string, name: string }[] | null, error: any };
+        .eq("user_id", user?.id) as unknown as { data: { id: string, name: string }[] | null, error: unknown };
 
       if (qrError) throw qrError;
       if (!qrCodes || qrCodes.length === 0) return [];
@@ -183,10 +195,19 @@ export function useTopCodes(limit = 4) {
       const qrIds = qrCodes.map(q => q.id);
 
       // Count actual scan events for each QR code
-      const { data: scanCounts, error: scanError } = await supabase
+      let query = supabase
         .from("scan_events")
         .select("qr_code_id")
-        .in("qr_code_id", qrIds) as unknown as { data: { qr_code_id: string }[] | null, error: any };
+        .in("qr_code_id", qrIds);
+
+      // For basic analytics (premium plan), limit to last 7 days
+      if (limits.analytics === "basic") {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        query = query.gte("scanned_at", sevenDaysAgo.toISOString());
+      }
+
+      const { data: scanCounts, error: scanError } = await query as unknown as { data: { qr_code_id: string }[] | null, error: unknown };
 
       if (scanError) throw scanError;
 

@@ -26,6 +26,22 @@ export default function Analytics() {
   const currentQr = qrId ? codes.find(c => c.id === qrId) : null;
   const { limits } = usePlan();
 
+  // Block access for plans with no analytics
+  if (limits.analytics === "none") {
+    return (
+      <DashboardLayout>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease }}>
+          <h1 className="text-2xl font-semibold mb-1">Analytics</h1>
+          <p className="text-sm text-muted-foreground mb-8">Track scan performance across all your QR codes.</p>
+          <UpgradeBanner
+            title="Analytics Locked"
+            description="Upgrade your plan to unlock analytics and track your QR code performance."
+          />
+        </motion.div>
+      </DashboardLayout>
+    );
+  }
+
   const isBasic = limits.analytics === "basic";
   const isPremiumOrFull = limits.analytics === "premium" || limits.analytics === "full";
 
