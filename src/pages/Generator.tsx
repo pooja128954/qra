@@ -269,18 +269,17 @@ export default function Generator() {
     };
 
     if (editId) {
-      updateQrCode(editId, payload);
+      await updateQrCode(editId, payload);
     } else {
-      createQrCode({
+      await createQrCode({
         ...payload,
         id: trackingIdRef.current as any,
       });
-      setTimeout(() => {
-        trackingIdRef.current = crypto.randomUUID();
-        setQrName("");
-        setInputValue("https://scanovax.com");
-        setLogoFile(undefined);
-      }, 1000);
+      // Only reset/refresh AFTER successful save
+      trackingIdRef.current = crypto.randomUUID();
+      setQrName("");
+      setInputValue("https://scanovax.com");
+      setLogoFile(undefined);
     }
   };
 

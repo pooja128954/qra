@@ -31,7 +31,6 @@ export function useQrCodes() {
   const createMutation = useMutation({
     mutationFn: async (payload: QrCodeInsert) => {
       if (!user) throw new Error("Not logged in");
-      // @ts-ignore
       const { error } = await supabase
         .from("qr_codes")
         .insert({ ...payload, user_id: user.id });
@@ -46,7 +45,6 @@ export function useQrCodes() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, payload }: { id: string; payload: Partial<QrCodeInsert> }) => {
-      // @ts-ignore
       const { error } = await supabase.from("qr_codes").update(payload).eq("id", id);
       if (error) throw error;
     },
@@ -92,23 +90,30 @@ export function useQrCodes() {
   });
 
   const createQrCode = useCallback(
-    (payload: QrCodeInsert) => createMutation.mutate(payload),
+    async (payload: QrCodeInsert) => {
+      return await createMutation.mutateAsync(payload);
+    },
     [createMutation]
   );
 
   const deleteQrCode = useCallback(
-    (id: string) => deleteMutation.mutate(id),
+    async (id: string) => {
+      return await deleteMutation.mutateAsync(id);
+    },
     [deleteMutation]
   );
 
   const updateQrCodeStatus = useCallback(
-    (id: string, status: "active" | "paused") =>
-      updateStatusMutation.mutate({ id, status }),
+    async (id: string, status: "active" | "paused") => {
+      return await updateStatusMutation.mutateAsync({ id, status });
+    },
     [updateStatusMutation]
   );
 
   const updateQrCode = useCallback(
-    (id: string, payload: Partial<QrCodeInsert>) => updateMutation.mutate({ id, payload }),
+    async (id: string, payload: Partial<QrCodeInsert>) => {
+      return await updateMutation.mutateAsync({ id, payload });
+    },
     [updateMutation]
   );
 
