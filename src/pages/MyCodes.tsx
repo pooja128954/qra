@@ -75,7 +75,24 @@ export default function MyCodes() {
   };
 
   const handleDownload = async (code: any, format: "png" | "svg" | "pdf") => {
-    const qr = getQrInstance(code);
+    let processedLogo = code.logo_url;
+
+    // Convert logo to Base64 to ensure it's embedded in the download
+    if (processedLogo && !processedLogo.startsWith("data:") && !processedLogo.startsWith("blob:")) {
+      try {
+        const response = await fetch(processedLogo);
+        const blob = await response.blob();
+        processedLogo = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {
+        console.error("Logo Base64 conversion failed for download", e);
+      }
+    }
+
+    const qr = getQrInstance({ ...code, logo_url: processedLogo });
 
     if (format === "pdf") {
       if (!limits.exports.includes("svg")) {

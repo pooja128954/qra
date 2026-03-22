@@ -88,7 +88,7 @@ export default function Redirect() {
 
               // Use RPC to increment scan atomically and record event
               // @ts-ignore
-              await supabase.rpc('increment_scan', {
+              const { error: rpcError } = await supabase.rpc('increment_scan', {
                 target_qr_id: qrId,
                 scanner_email: scannerEmail,
                 device_type: deviceType,
@@ -98,6 +98,13 @@ export default function Redirect() {
                 ip_address: ipAddress,
                 user_identifier: userIdentifier
               });
+
+              if (rpcError) {
+                console.error("RPC Error:", rpcError);
+              }
+
+              // Small delay to ensure DB transaction is finalized before navigation
+              await new Promise(resolve => setTimeout(resolve, 500));
             }
           }
         } catch (analyticsError) {
@@ -113,8 +120,9 @@ export default function Redirect() {
           window.location.replace(target);
         } else if (qrData.type === "text") {
           // Simple display for text
+          const content = qrData.content;
           document.body.innerHTML = `<div style="padding: 2rem; font-family: sans-serif; text-align: center; max-width: 600px; margin: 0 auto; margin-top: 20vh; background: #f8f9fa; border-radius: 12px; border: 1px solid #e5e7eb;">
-            <p style="font-size: 1.25rem; line-height: 1.6; color: #111827; margin-bottom: 2rem;">${qrData.content}</p>
+            <p style="font-size: 1.25rem; line-height: 1.6; color: #111827; margin-bottom: 2rem;">${content}</p>
             <button onclick="window.close()" style="padding: 10px 20px; background: #0f172a; color: white; border: none; border-radius: 6px; cursor: pointer;">Close Window</button>
           </div>`;
         } else {

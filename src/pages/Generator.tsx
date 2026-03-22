@@ -88,6 +88,38 @@ export default function Generator() {
   }));
 
   const [logoFile, setLogoFile] = useState<string | undefined>(undefined);
+  const [base64Logo, setBase64Logo] = useState<string | undefined>(undefined);
+
+  // Helper to convert URL to Base64 for reliable embedding in QR
+  useEffect(() => {
+    if (!logoFile) {
+      setBase64Logo(undefined);
+      return;
+    }
+
+    if (logoFile.startsWith("data:") || logoFile.startsWith("blob:")) {
+      setBase64Logo(logoFile);
+      return;
+    }
+
+    const convertToBase64 = async () => {
+      try {
+        const response = await fetch(logoFile);
+        const blob = await response.blob();
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {
+        console.error("Logo Base64 conversion failed", e);
+        return logoFile; // Fallback to original URL
+      }
+    };
+
+    convertToBase64().then(setBase64Logo);
+  }, [logoFile]);
 
   // Use the full inputValue in a preview param so the QR code visually changes for every character
   const qrValue = `${window.location.origin}/r/${editId || trackingIdRef.current}${inputValue ? `?preview=${encodeURIComponent(inputValue)}` : ''}`;
@@ -222,13 +254,13 @@ export default function Generator() {
       qrOptions: {
         errorCorrectionLevel: ecLevel
       },
-      image: logoFile,
+      image: base64Logo || logoFile,
       imageOptions: {
         margin: 0,
         imageSize: 0.45
       }
     });
-  }, [qrValue, fgColor, bgColor, selectedShape, ecLevel, limits.canCustomize, logoFile, qrRef.current]);
+  }, [qrValue, fgColor, bgColor, selectedShape, ecLevel, limits.canCustomize, logoFile, base64Logo, qrRef.current]);
 
   const handleSave = async () => {
     if (!editId && isLimitReached) {
