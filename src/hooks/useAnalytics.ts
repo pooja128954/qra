@@ -40,7 +40,7 @@ export function useScanStats(qrId?: string) {
         }
       } else {
         // Get all QR codes owned by user
-        const { data: qrCodes } = await supabase.from("qr_codes").select("id, scan_count") as unknown as { data: { id: string, scan_count: number }[] | null };
+        const { data: qrCodes } = await supabase.from("qr_codes").select("id, scan_count").eq("user_id", user?.id) as unknown as { data: { id: string, scan_count: number }[] | null };
         if (qrCodes) {
           ids = qrCodes.map((q) => q.id);
           totalScansValue = qrCodes.reduce((acc, q) => acc + q.scan_count, 0);
@@ -137,7 +137,7 @@ export function useWeeklyScans(qrId?: string) {
         const { data } = await supabase.from("qr_codes").select("id").eq("id", qrId).single() as unknown as { data: { id: string } | null };
         if (data) ids = [data.id];
       } else {
-        const { data: qrCodes } = await supabase.from("qr_codes").select("id") as unknown as { data: { id: string }[] | null };
+        const { data: qrCodes } = await supabase.from("qr_codes").select("id").eq("user_id", user?.id) as unknown as { data: { id: string }[] | null };
         if (qrCodes) ids = qrCodes.map((q) => q.id);
       }
 
@@ -177,6 +177,7 @@ export function useTopCodes(limit = 4) {
       const { data, error } = await supabase
         .from("qr_codes")
         .select("name, scan_count")
+        .eq("user_id", user?.id)
         .order("scan_count", { ascending: false })
         .limit(limit) as unknown as { data: { name: string, scan_count: number }[] | null, error: any };
 

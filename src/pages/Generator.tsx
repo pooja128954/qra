@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import QRCodeStyling, { DotType, CornerSquareType, ErrorCorrectionLevel } from "qr-code-styling";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  Globe, Type, User, Image as ImageIcon, Share2, Smartphone, Video,
+  Globe, Type, Image as ImageIcon, Share2, Smartphone, Video,
   Palette, Square, Pipette, Upload, ShieldCheck, Download, Save, Lock, ArrowRight,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -28,7 +28,6 @@ const ease = [0.16, 1, 0.3, 1] as const;
 const qrTypes = [
   { id: "url", label: "Website URL", icon: Globe },
   { id: "text", label: "Text", icon: Type },
-  { id: "vcard", label: "vCard Plus", icon: User },
   { id: "image", label: "Image", icon: ImageIcon },
   { id: "social", label: "Social Media", icon: Share2 },
   { id: "app", label: "App Download", icon: Smartphone },
@@ -55,9 +54,6 @@ export default function Generator() {
   const [activeType, setActiveType] = useState("url");
   const [qrName, setQrName] = useState("");
   const [inputValue, setInputValue] = useState("https://scanovax.com");
-
-  // vCard State
-  const [vcard, setVcard] = useState({ firstName: "", lastName: "", phone: "", email: "", company: "", website: "" });
 
   const [fgColor, setFgColor] = useState("#0f172a");
   const [bgColor, setBgColor] = useState("#ffffff");
@@ -121,9 +117,12 @@ export default function Generator() {
     convertToBase64().then(setBase64Logo);
   }, [logoFile]);
 
-  // Use the full inputValue in a preview param so the QR code visually changes for every character
-  const qrValue = `${window.location.origin}/r/${editId || trackingIdRef.current}${inputValue ? `?preview=${encodeURIComponent(inputValue)}` : ''}`;
-  
+  // For text QR type, encode the raw text directly (not a redirect URL).
+  // For other types, use internal redirect route to maintain analytics and internal display.
+  const qrValue = activeType === "text"
+    ? (inputValue || " ")
+    : `${window.location.origin}/r/${editId || trackingIdRef.current}${inputValue ? `?preview=${encodeURIComponent(inputValue)}` : ''}`;
+
   // Content for the QR code if it were static (optional, but we use redirect now)
   const qrContent = inputValue;
   
@@ -131,7 +130,6 @@ export default function Generator() {
     switch (activeType) {
       case "url": return "https://example.com";
       case "text": return "Enter your text message...";
-      case "vcard": return "Full Name, Email, Phone";
       case "social": return "@username or profile URL";
       case "app": return "App Store or Play Store URL";
       case "video": return "YouTube or video URL";
@@ -142,14 +140,6 @@ export default function Generator() {
 
   const ecLevel = errorLevel.charAt(0) as ErrorCorrectionLevel;
   const isLimitReached = codes.length >= limits.qrLimit;
-
-  // Dynamic Payload Generator
-  useEffect(() => {
-    if (activeType === "vcard") {
-      const vcardPayload = `BEGIN:VCARD\nVERSION:3.0\nN:${vcard.lastName};${vcard.firstName};;;\nFN:${vcard.firstName} ${vcard.lastName}\nORG:${vcard.company}\nTEL;TYPE=WORK,VOICE:${vcard.phone}\nEMAIL:${vcard.email}\nURL:${vcard.website}\nEND:VCARD`;
-      setInputValue(vcardPayload);
-    }
-  }, [vcard, activeType]);
 
   // Load existing data for editing
   useEffect(() => {
@@ -171,24 +161,6 @@ export default function Generator() {
           if (matched) setErrorLevel(matched);
         }
         trackingIdRef.current = existing.id as any;
-
-        // Parse vCard if needed
-        if (existing.type === "vcard") {
-          const fnMatch = existing.content.match(/FN:(.*)\n/);
-          const orgMatch = existing.content.match(/ORG:(.*)\n/);
-          const telMatch = existing.content.match(/TEL;TYPE=WORK,VOICE:(.*)\n/);
-          const emailMatch = existing.content.match(/EMAIL:(.*)\n/);
-          const urlMatch = existing.content.match(/URL:(.*)\n/);
-
-          if (fnMatch) {
-            const names = fnMatch[1].split(' ');
-            setVcard(v => ({ ...v, firstName: names[0] || "", lastName: names.slice(1).join(' ') || "" }));
-          }
-          if (orgMatch) setVcard(v => ({ ...v, company: orgMatch[1] }));
-          if (telMatch) setVcard(v => ({ ...v, phone: telMatch[1] }));
-          if (emailMatch) setVcard(v => ({ ...v, email: emailMatch[1] }));
-          if (urlMatch) setVcard(v => ({ ...v, website: urlMatch[1] }));
-        }
       }
     }
   }, [editId, codes]);
@@ -509,17 +481,6 @@ export default function Generator() {
             <div>
               <h3 className="label-caps text-muted-foreground mb-3">Content</h3>
 
-              {activeType === "vcard" && (
-                <div className="grid grid-cols-2 gap-4">
-                  <input type="text" placeholder="First Name" value={vcard.firstName} onChange={(e) => setVcard({ ...vcard, firstName: e.target.value })} className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow" />
-                  <input type="text" placeholder="Last Name" value={vcard.lastName} onChange={(e) => setVcard({ ...vcard, lastName: e.target.value })} className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow" />
-                  <input type="tel" placeholder="Phone Number" value={vcard.phone} onChange={(e) => setVcard({ ...vcard, phone: e.target.value })} className="col-span-2 sm:col-span-1 w-full bg-background border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow" />
-                  <input type="email" placeholder="Email Address" value={vcard.email} onChange={(e) => setVcard({ ...vcard, email: e.target.value })} className="col-span-2 sm:col-span-1 w-full bg-background border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow" />
-                  <input type="text" placeholder="Company Name" value={vcard.company} onChange={(e) => setVcard({ ...vcard, company: e.target.value })} className="col-span-2 sm:col-span-1 w-full bg-background border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow" />
-                  <input type="url" placeholder="Website" value={vcard.website} onChange={(e) => setVcard({ ...vcard, website: e.target.value })} className="col-span-2 sm:col-span-1 w-full bg-background border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow" />
-                </div>
-              )}
-
               {activeType === "image" && (
                 <div className="border border-border rounded-lg p-4 bg-background">
                   <input type="file" accept="image/*" onChange={handleImageUpload} className="w-full text-sm" />
@@ -680,7 +641,7 @@ export default function Generator() {
                 <div className="w-full text-center">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold mb-1">Target Content</p>
                   <p className="text-xs font-mono text-foreground/70 truncate px-4">
-                    {activeType === "vcard" ? `${vcard.firstName} ${vcard.lastName}` : (inputValue || "Empty")}
+                    {inputValue || "Empty"}
                   </p>
                 </div>
               </div>

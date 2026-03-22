@@ -7,6 +7,7 @@ import {
   ReactNode,
 } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import type { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     // Get initial session
@@ -58,9 +60,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast.error(error.message);
       throw error;
     }
+    // Clear any cached data from previous sessions
+    queryClient.clear();
     toast.success("Welcome back!");
     navigate("/dashboard/qr-generator");
-  }, [navigate]);
+  }, [navigate, queryClient]);
 
   const register = useCallback(
     async (name: string, email: string, password: string) => {
