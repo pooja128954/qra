@@ -40,10 +40,10 @@ export default function Redirect() {
 
         // 2. Gather Environment Data
         const userAgent = navigator.userAgent;
-        // Simplified BOT check to avoid blocking real user hits
+        // STRENGTHENED BOT DETECTION: Only block real crawlers, allow manual user hits
         const isBot = /bot|crawler|spider|slurp|bing|google/i.test(userAgent);
         
-        if (false) { // Keep logic for bots but effectively disable for now to ensure all hits count during testing
+        if (isBot) {
           console.log("Analytics Skip: Bot detected (" + userAgent + ")");
         } else {
           // 3. Capture Geography (Parallel to not block the flow)
