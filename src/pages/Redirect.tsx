@@ -60,8 +60,14 @@ export default function Redirect() {
           const deviceType = /Mobi|Android|iPhone/i.test(userAgent) ? "mobile" : "desktop";
           const userIdentifier = `${geo.ip}-${userAgent}`; // Primary Unique ID
 
-          console.log("Recording atomic scan...");
-          const { error: rpcError } = await (supabase as any).rpc('increment_scan', {
+          console.log("Recording atomic scan with params:", {
+            target_qr_id: qrId,
+            device_type: deviceType,
+            country: geo.country_name,
+            user_identifier: userIdentifier.substring(0, 20) + "..."
+          });
+          
+          const { error: rpcError, data: rpcData } = await (supabase as any).rpc('increment_scan', {
             target_qr_id: qrId,
             scanner_email: null,
             device_type: deviceType,
@@ -73,9 +79,16 @@ export default function Redirect() {
           });
 
           if (rpcError) {
-            console.error("Analytics RPC Failure:", rpcError);
+            console.error("❌ Analytics RPC Error:", {
+              code: rpcError.code,
+              message: rpcError.message,
+              details: rpcError.details,
+              hint: rpcError.hint
+            });
+            toast.error("Scan tracking failed (but redirect will proceed)");
           } else {
-            console.log("Analytics Success: Scan recorded for " + qrId);
+            console.log("✅ Analytics Success: Scan recorded for " + qrId);
+            console.log("RPC Data:", rpcData);
           }
         }
 
