@@ -17,13 +17,25 @@ export default function Redirect() {
 
   useEffect(() => {
     async function init() {
-      if (!qrId) return;
-      // Protected against double-taps within the same mounting cycle only
-      if (processed.current) return;
+      console.log("🔍 Redirect.tsx init() called");
+      console.log("🔍 qrId from URL:", qrId);
+      console.log("🔍 processed.current:", processed.current);
+      
+      if (!qrId) {
+        console.warn("❌ NO QR ID - returning early");
+        return;
+      }
+      
+      if (processed.current) {
+        console.log("⚠️ Already processed, returning");
+        return;
+      }
+      
       processed.current = true;
+      console.log("✅ Setting processed.current = true");
 
       try {
-        console.log("Analytics Initialization: Fetching QR Data...");
+        console.log("📊 Step 1: Fetching QR Data...");
         // 1. Fetch QR metadata
         const { data: qr, error: qrError } = await (supabase as any)
           .from("qr_codes")
@@ -31,52 +43,58 @@ export default function Redirect() {
           .eq("id", qrId)
           .maybeSingle();
 
+        console.log("📊 Step 1 Result:", { qrError, qrExists: !!qr });
+        
         if (qrError || !qr) {
+          console.error("❌ QR fetch error:", qrError);
           setError("QR code not found or has been deleted.");
           return;
         }
 
         setQrData(qr);
+        console.log("✅ QR data loaded:", qr.id);
 
         // 2. Gather Environment Data
         const userAgent = navigator.userAgent;
+        console.log("📊 Step 2: User Agent:", userAgent);
+        
         // STRENGTHENED BOT DETECTION: Only block real crawlers, allow manual user hits
         const isBot = /bot|crawler|spider|slurp|bing|google/i.test(userAgent);
+        console.log("📊 Is Bot?:", isBot);
         
         if (isBot) {
-          console.log("Analytics Skip: Bot detected (" + userAgent + ")");
+          console.log("⚠️ BOT DETECTED - Skipping analytics");
         } else {
+          console.log("✅ Real user - proceeding with analytics");
+          
           // 3. Capture Geography (Parallel to not block the flow)
           let geo = { country_name: "Unknown", region: "Unknown", city: "Unknown", ip: "Unknown" };
           try {
+            console.log("📊 Step 3: Fetching GeoIP...");
             const geoRes = await fetch("https://ipapi.co/json/");
             if (geoRes.ok) {
               geo = await geoRes.json();
               setGeoInfo(geo);
+              console.log("✅ GeoIP loaded:", geo.country_name, geo.ip);
             }
-          } catch (e) { console.error("Geo-IP capture failed:", e); }
+          } catch (e) { 
+            console.error("⚠️ Geo-IP capture failed:", e);
+          }
 
           // 4. Atomic Scan Increment (Total + Unique log)
           const deviceType = /Mobi|Android|iPhone/i.test(userAgent) ? "mobile" : "desktop";
-          
-          // Create a deterministic hash of IP + UserAgent for unique identification
-          // Use a simple hash to keep it short and consistent
           const userIdentifierRaw = `${geo.ip}-${userAgent}`;
           let userIdentifier = userIdentifierRaw;
           try {
-            // Create a simple hash by taking first 50 chars of raw identifier
-            // This keeps it consistent while avoiding overly long strings
             userIdentifier = userIdentifierRaw.substring(0, 100);
           } catch (e) {
             userIdentifier = geo.ip || "Unknown";
           }
 
-          console.log("Recording atomic scan with params:", {
-            target_qr_id: qrId,
-            device_type: deviceType,
-            country: geo.country_name,
-            user_identifier: userIdentifier.substring(0, 20) + "..."
-          });
+          console.log("📊 Step 4: Calling increment_scan RPC...");
+          console.log("  QR ID:", qrId);
+          console.log("  Device Type:", deviceType);
+          console.log("  User ID:", userIdentifier.substring(0, 20) + "...");
           
           const { error: rpcError, data: rpcData } = await (supabase as any).rpc('increment_scan', {
             target_qr_id: qrId,
@@ -89,35 +107,30 @@ export default function Redirect() {
             user_identifier: userIdentifier
           });
 
+          console.log("📊 Step 4 RPC Response:", { error: !!rpcError, data: rpcData });
+
           if (rpcError) {
-            console.error("❌ Analytics RPC Call Failed:", {
+            console.error("❌ RPC Call Failed:", {
               code: rpcError.code,
               message: rpcError.message,
               details: rpcError.details,
               hint: rpcError.hint
             });
-            console.error("Full error:", rpcError);
           } else {
-            console.log("✅ RPC returned:", rpcData);
-            console.log("Response status:", rpcData?.status);
-            console.log("Response message:", rpcData?.message);
-            
+            console.log("✅ RPC Success:", rpcData);
             if (rpcData?.status === 'success') {
-              console.log("✅ Scan successfully recorded!");
-            } else if (rpcData?.status === 'duplicate') {
-              console.log("⚠️ Duplicate scan detected (within 5 seconds)");
-            } else {
-              console.warn("⚠️ Unexpected RPC response:", rpcData);
+              console.log("✅✅✅ SCAN COUNT INCREMENTED TO:", rpcData?.new_scan_count);
             }
           }
         }
 
         // 5. Redirection Logic
+        console.log("📊 Step 5: Checking lead capture...");
         if (qr.lead_capture_enabled) {
-          console.log("Lead Capture Enabled: Intercepting Redirection.");
+          console.log("📝 Lead Capture Enabled");
           setShowForm(true);
         } else {
-          console.log("Standard Redirect: Proceeding to destination.");
+          console.log("🔗 Standard Redirect - proceeding to destination");
           // Small delay for tracking to settle
           setTimeout(() => {
             performRedirect(qr);
@@ -125,6 +138,7 @@ export default function Redirect() {
         }
 
       } catch (err: any) {
+        console.error("💥 Unhandled error in init():", err);
         setError("Error processing scan: " + err.message);
       }
     }
