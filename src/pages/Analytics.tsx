@@ -139,7 +139,7 @@ export default function Analytics() {
           {/* Top QR Codes */}
           <div className="bg-card border border-border rounded-xl p-6">
             <h3 className="font-semibold mb-1">Top QR Codes</h3>
-            <p className="text-xs text-muted-foreground mb-6">By total scans</p>
+            <p className="text-xs text-muted-foreground mb-6">By scan count</p>
             {topLoading ? (
               <div className="space-y-4">
                 {Array.from({ length: 4 }).map((_, i) => (

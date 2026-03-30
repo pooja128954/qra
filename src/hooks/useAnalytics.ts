@@ -93,7 +93,7 @@ export function useScanStats(qrId?: string) {
         .sort((a, b) => b.count - a.count)
         .slice(0, 5);
 
-      return { totalScans: totalScansValue, uniqueScans: unique, desktopPct, mobilePct, countries, browsers: [] };
+      return { totalScans: total, uniqueScans: unique, desktopPct, mobilePct, countries, browsers: [] };
     },
   });
 }
