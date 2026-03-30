@@ -31,27 +31,8 @@ export function useQrCodes() {
       if (qrError) throw qrError;
       if (!qrCodes || qrCodes.length === 0) return [];
 
-      const qrIds = qrCodes.map((q: any) => q.id);
-
-      // Count actual scan events for each QR code
-      const { data: scanCounts, error: scanError } = await (supabase as any)
-        .from("scan_events")
-        .select("qr_code_id")
-        .in("qr_code_id", qrIds);
-
-      if (scanError) throw scanError;
-
-      // Group scan counts by QR code ID
-      const countMap: Record<string, number> = {};
-      (scanCounts as any[])?.forEach(scan => {
-        countMap[scan.qr_code_id] = (countMap[scan.qr_code_id] || 0) + 1;
-      });
-
-      // Replace cached scan_count with real count
-      return qrCodes.map((qr: any) => ({
-        ...qr,
-        scan_count: countMap[qr.id] || 0
-      })) as QrCode[];
+      // No more manual client-side counting. Let the database counters be the source of truth.
+      return qrCodes as QrCode[];
     },
   });
 

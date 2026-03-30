@@ -32,20 +32,23 @@ export function useScanStats(qrId?: string) {
     queryFn: async () => {
       let ids: string[] = [];
       let totalScansValue = 0;
+      let uniqueScansValue = 0;
 
       if (qrId) {
         // Only fetch for specific QR
-        const { data } = await supabase.from("qr_codes").select("id, scan_count").eq("id", qrId).single() as unknown as { data: { id: string, scan_count: number } | null };
+        const { data } = await supabase.from("qr_codes").select("id, total_scans_count, unique_scans_count").eq("id", qrId).single() as unknown as { data: { id: string, total_scans_count: number, unique_scans_count: number } | null };
         if (data) {
           ids = [data.id];
-          totalScansValue = data.scan_count;
+          totalScansValue = data.total_scans_count || 0;
+          uniqueScansValue = data.unique_scans_count || 0;
         }
       } else {
         // Get all QR codes owned by user
-        const { data: qrCodes } = await supabase.from("qr_codes").select("id, scan_count").eq("user_id", user?.id) as unknown as { data: { id: string, scan_count: number }[] | null };
+        const { data: qrCodes } = await supabase.from("qr_codes").select("id, total_scans_count, unique_scans_count").eq("user_id", user?.id) as unknown as { data: { id: string, total_scans_count: number, unique_scans_count: number }[] | null };
         if (qrCodes) {
           ids = qrCodes.map((q) => q.id);
-          totalScansValue = qrCodes.reduce((acc, q) => acc + q.scan_count, 0);
+          totalScansValue = qrCodes.reduce((acc, q) => acc + (q.total_scans_count || 0), 0);
+          uniqueScansValue = qrCodes.reduce((acc, q) => acc + (q.unique_scans_count || 0), 0);
         }
       }
 
@@ -68,11 +71,9 @@ export function useScanStats(qrId?: string) {
 
       const { data: events } = await query as unknown as { data: { id: string, device_type: string | null, country: string | null, user_identifier: string | null }[] | null };
 
-      // Total scans is the all-time global count from the QR codes themselves
+      // Counters are now pulled directly from the QR code master table for absolute accuracy
       const total = totalScansValue;
-
-      // Unique scans and breakdown stats come from the detailed scan_events log
-      const unique = new Set(events?.filter(e => e.user_identifier).map(e => e.user_identifier) ?? []).size;
+      const unique = uniqueScansValue;
 
       const eventCount = events?.length ?? 0;
       const desktop = events?.filter((e) => e.device_type === "desktop").length ?? 0;
@@ -187,9 +188,9 @@ export function useTopCodes(limit = 4) {
       // Get QR codes owned by user with their global scan counts
       const { data: qrCodes, error: qrError } = await supabase
         .from("qr_codes")
-        .select("id, name, scan_count")
+        .select("id, name, total_scans_count")
         .eq("user_id", user?.id)
-        .order("scan_count", { ascending: false })
+        .order("total_scans_count", { ascending: false })
         .limit(limit);
 
       if (qrError) throw qrError;
@@ -197,7 +198,7 @@ export function useTopCodes(limit = 4) {
 
       return (qrCodes as any[]).map(qr => ({
         name: qr.name,
-        scans: qr.scan_count || 0
+        scans: qr.total_scans_count || 0
       }));
     },
   });

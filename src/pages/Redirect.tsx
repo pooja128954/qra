@@ -52,8 +52,18 @@ export default function Redirect() {
           } else {
             localStorage.setItem(`last_scan_${qrId}`, now.toString());
 
-            // 3. Capture Geography (Parallel to not block the flow)
-            let geo = { country_name: "Unknown", region: "Unknown", city: "Unknown", ip: "Unknown" };
+            // 1. Get User/Device Identification for Uniqueness 
+            // We use a combination of persistent localStorage ID + IP + Agent
+            let deviceId = localStorage.getItem('scanovax_device_id');
+            if (!deviceId) {
+              deviceId = crypto.randomUUID();
+              localStorage.setItem('scanovax_device_id', deviceId);
+            }
+            const deviceIdentifier = `${deviceId}-${userAgent}`;
+            
+            // 2. Resolve Geo Data (IP, Country, City)
+            // This is done via an external API to ensure accuracy regardless of server-side proxying
+            let geo = { ip: "Unknown", country_name: "Unknown", region: "Unknown", city: "Unknown" };
             try {
               const geoRes = await fetch("https://ipapi.co/json/");
               if (geoRes.ok) {
@@ -64,7 +74,7 @@ export default function Redirect() {
 
             // 4. Atomic Scan Increment (Total + Unique log)
             const deviceType = /Mobi|Android|iPhone/i.test(userAgent) ? "mobile" : "desktop";
-            const userIdentifier = `${geo.ip}-${userAgent}`; // Primary Unique ID
+            // Logic: persistent device identifier is the source of truth for "Unique" users
 
             console.log("Recording atomic scan...");
             const { error: rpcError } = await (supabase as any).rpc('increment_scan', {
@@ -75,7 +85,7 @@ export default function Redirect() {
               state: geo.region,
               city: geo.city,
               ip_address: geo.ip,
-              user_identifier: userIdentifier
+              user_identifier: deviceIdentifier
             });
 
             if (rpcError) console.error("Analytics RPC Failure:", rpcError);
