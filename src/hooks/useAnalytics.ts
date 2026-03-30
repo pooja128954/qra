@@ -32,20 +32,29 @@ export function useScanStats(qrId?: string) {
     queryFn: async () => {
       let ids: string[] = [];
       let totalScansValue = 0;
+      let uniqueScansValue = 0;
+
+      // Get QR codes owned by user with their global scan counts
+      const { data: qrCodes, error: qrError } = await supabase
+        .from("qr_codes")
+        .select("id, scan_count, unique_scan_count")
+        .eq("user_id", user?.id);
+
+      if (qrError) throw qrError;
 
       if (qrId) {
-        // Only fetch for specific QR
-        const { data } = await supabase.from("qr_codes").select("id, scan_count").eq("id", qrId).single() as unknown as { data: { id: string, scan_count: number } | null };
-        if (data) {
-          ids = [data.id];
-          totalScansValue = data.scan_count;
+        const qr = (qrCodes as any[])?.find(q => q.id === qrId);
+        if (qr) {
+          ids = [qr.id];
+          totalScansValue = qr.scan_count || 0;
+          uniqueScansValue = qr.unique_scan_count || 0;
         }
       } else {
-        // Get all QR codes owned by user
-        const { data: qrCodes } = await supabase.from("qr_codes").select("id, scan_count").eq("user_id", user?.id) as unknown as { data: { id: string, scan_count: number }[] | null };
         if (qrCodes) {
-          ids = qrCodes.map((q) => q.id);
-          totalScansValue = qrCodes.reduce((acc, q) => acc + q.scan_count, 0);
+          const codes = qrCodes as any[];
+          ids = codes.map((q) => q.id);
+          totalScansValue = codes.reduce((acc, q) => acc + (q.scan_count || 0), 0);
+          uniqueScansValue = codes.reduce((acc, q) => acc + (q.unique_scan_count || 0), 0);
         }
       }
 
@@ -53,10 +62,10 @@ export function useScanStats(qrId?: string) {
         return { totalScans: 0, uniqueScans: 0, desktopPct: 0, mobilePct: 0, countries: [], browsers: [] };
       }
 
-      // Fetch scan events for those codes (for unique and geo stats)
+      // Fetch scan events for those codes (for geo/device stats)
       let query = supabase
         .from("scan_events")
-        .select("id, device_type, country, user_identifier")
+        .select("id, device_type, country")
         .in("qr_code_id", ids);
 
       // For basic analytics (premium plan), limit to last 7 days
@@ -66,15 +75,13 @@ export function useScanStats(qrId?: string) {
         query = query.gte("scanned_at", sevenDaysAgo.toISOString());
       }
 
-      const { data: events } = await query as unknown as { data: { id: string, device_type: string | null, country: string | null, user_identifier: string | null }[] | null };
+      const { data: events } = await query as unknown as { data: { id: string, device_type: string | null, country: string | null }[] | null };
 
-      // Total scans should be the count of all audit events in the result set
-      const total = events?.length ?? 0;
-      
-      // Unique scans come from the distinct user_identifiers in those events
-      const unique = new Set(events?.filter(e => e.user_identifier).map(e => e.user_identifier) ?? []).size;
+      // High-Fidelity Independent Counting (Rules 1-8)
+      const total = totalScansValue;
+      const unique = uniqueScansValue;
 
-      const eventCount = total;
+      const eventCount = events?.length ?? 0;
       const desktop = events?.filter((e) => e.device_type === "desktop").length ?? 0;
       const mobile = events?.filter((e) => e.device_type === "mobile").length ?? 0;
       const other = eventCount - desktop - mobile;
@@ -93,7 +100,7 @@ export function useScanStats(qrId?: string) {
         .sort((a, b) => b.count - a.count)
         .slice(0, 5);
 
-      return { totalScans: totalScansValue, uniqueScans: unique, desktopPct, mobilePct, countries, browsers: [] };
+      return { totalScans: total, uniqueScans: unique, desktopPct, mobilePct, countries, browsers: [] };
     },
   });
 }

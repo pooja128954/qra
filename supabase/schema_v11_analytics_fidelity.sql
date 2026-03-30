@@ -4,7 +4,17 @@
 
 -- 0. ENSURE COLUMNS EXIST (Crucial for fresh installs)
 ALTER TABLE public.qr_codes ADD COLUMN IF NOT EXISTS scan_count bigint DEFAULT 0;
+ALTER TABLE public.qr_codes ADD COLUMN IF NOT EXISTS unique_scan_count bigint DEFAULT 0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS monthly_scan_count bigint DEFAULT 0;
+
+-- Backfill unique_scan_count for existing data if it hasn't been done
+UPDATE public.qr_codes q
+SET unique_scan_count = (
+  SELECT count(DISTINCT user_identifier) 
+  FROM public.scan_events s 
+  WHERE s.qr_code_id = q.id
+)
+WHERE unique_scan_count = 0;
 
 -- 1. Definitively Atomic Independent Increment RPC
 -- This version removes ALL de-duplication to ensure that 
@@ -37,6 +47,19 @@ BEGIN
   UPDATE public.profiles 
   SET monthly_scan_count = coalesce(monthly_scan_count, 0) + 1 
   WHERE id = (SELECT user_id FROM public.qr_codes WHERE id = target_qr_id);
+
+  -- 3. UNIQUE SCAN CHECK & INCREMENT
+  -- Check if this specific user_identifier has ever scanned this QR before
+  IF NOT EXISTS (
+    SELECT 1 FROM public.scan_events 
+    WHERE qr_code_id = target_qr_id 
+    AND user_identifier = user_identifier
+    LIMIT 1
+  ) THEN
+    UPDATE public.qr_codes
+    SET unique_scan_count = coalesce(unique_scan_count, 0) + 1
+    WHERE id = target_qr_id;
+  END IF;
 
   -- B. LOG EVERY SCAN EVENT (Audit Trail)
   -- No IF NOT EXISTS check here. Every hit creates a row.

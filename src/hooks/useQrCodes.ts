@@ -30,10 +30,11 @@ export function useQrCodes() {
 
       if (qrError) throw qrError;
       
-      // Ensure scan_count is always a number to prevent toLocaleString crashes
+      // Ensure scan counts are always numbers to prevent toLocaleString crashes
       return (qrCodes as any[]).map(qr => ({
         ...qr,
-        scan_count: Number(qr.scan_count ?? 0)
+        scan_count: Number(qr.scan_count ?? 0),
+        unique_scan_count: Number(qr.unique_scan_count ?? 0)
       })) as QrCode[];
     },
   });
