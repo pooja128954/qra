@@ -47,8 +47,8 @@ export default function Analytics() {
   const isPremiumOrFull = limits.analytics === "premium" || limits.analytics === "full";
 
   const overviewStats = [
-    { label: "Total Scans", value: (stats?.totalScans ?? 0).toLocaleString(), icon: Scan },
-    { label: "Unique Scans", value: (stats?.uniqueScans ?? 0).toLocaleString(), icon: Users },
+    { label: "Total Scans", value: (stats?.totalScans ?? 0).toLocaleString(), icon: Scan, subLabel: "All Hits" },
+    { label: "Unique Scans", value: (stats?.uniqueScans ?? 0).toLocaleString(), icon: Users, subLabel: "People" },
     { label: "Desktop", value: `${stats?.desktopPct ?? 38}%`, icon: Monitor },
     { label: "Mobile", value: `${stats?.mobilePct ?? 62}%`, icon: Smartphone },
     { label: "Lead Conversions", value: leads.length.toLocaleString(), icon: Users },
@@ -80,12 +80,13 @@ export default function Analytics() {
                   transition={{ duration: 0.4, ease, delay: i * 0.08 }}
                   className="bg-card border border-border rounded-xl p-5"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="label-caps text-muted-foreground">{s.label}</span>
-                    <s.icon className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <p className="text-2xl font-semibold tabular-nums">{s.value}</p>
-                </motion.div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="label-caps text-muted-foreground">{s.label}</span>
+                      <s.icon className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <p className="text-2xl font-semibold tabular-nums">{s.value}</p>
+                    {s.subLabel && <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold tracking-tight">{s.subLabel}</p>}
+                  </motion.div>
               );
             })}
 
