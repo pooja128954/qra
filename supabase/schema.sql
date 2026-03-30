@@ -205,8 +205,8 @@ begin
     return json_build_object('status', 'duplicate', 'message', 'Duplicate scan within 5 seconds');
   end if;
 
-  -- Get the user_id for the QR code
-  select qr_codes.user_id, COALESCE(qr_codes.scan_count, 0)
+  -- Get the user_id and existing scan count for the QR code
+  select qr_codes.user_id, COALESCE(qr_codes.total_scans_count, 0)
   into v_user_id, v_existing_count
   from public.qr_codes 
   where id = target_qr_id;
@@ -218,9 +218,9 @@ begin
   -- Calculate new count
   v_new_count := v_existing_count + 1;
 
-  -- UPDATE SCAN COUNT (primary counter)
+  -- UPDATE SCAN COUNT (primary counter) - using correct column name total_scans_count
   update public.qr_codes
-  set scan_count = v_new_count
+  set total_scans_count = v_new_count
   where id = target_qr_id;
 
   -- UPDATE MONTHLY COUNTER for the user
