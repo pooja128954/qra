@@ -90,18 +90,25 @@ export default function Redirect() {
           });
 
           if (rpcError) {
-            console.error("❌ Analytics RPC Error:", {
+            console.error("❌ Analytics RPC Call Failed:", {
               code: rpcError.code,
               message: rpcError.message,
               details: rpcError.details,
               hint: rpcError.hint
             });
-            // Still show error but allow redirect to continue
-            console.warn("⚠️ Scan tracking failed, but redirecting anyway. Check Supabase schema deployment.");
-            // Only show toast if user is likely to see it (longer timeout before redirect)
+            console.error("Full error:", rpcError);
           } else {
-            console.log("✅ Analytics Success: Scan recorded for " + qrId);
-            console.log("RPC Data:", rpcData);
+            console.log("✅ RPC returned:", rpcData);
+            console.log("Response status:", rpcData?.status);
+            console.log("Response message:", rpcData?.message);
+            
+            if (rpcData?.status === 'success') {
+              console.log("✅ Scan successfully recorded!");
+            } else if (rpcData?.status === 'duplicate') {
+              console.log("⚠️ Duplicate scan detected (within 5 seconds)");
+            } else {
+              console.warn("⚠️ Unexpected RPC response:", rpcData);
+            }
           }
         }
 
