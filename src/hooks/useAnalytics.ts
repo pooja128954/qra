@@ -68,18 +68,19 @@ export function useScanStats(qrId?: string) {
 
       const { data: events } = await query as unknown as { data: { id: string, device_type: string | null, country: string | null, user_identifier: string | null }[] | null };
 
-      // Total scans should count all events, including repeated scans from same user
-      const total = events?.length ?? 0;
+      // Total scans is the all-time global count from the QR codes themselves
+      const total = totalScansValue;
 
-      // Unique scans: count distinct user_identifier (user/session identifier)
+      // Unique scans and breakdown stats come from the detailed scan_events log
+      // (Note: unique scans are always calculated from the events log over the available range)
       const unique = new Set(events?.map(e => e.user_identifier ?? "anonymous")).size;
 
       const desktop = events?.filter((e) => e.device_type === "desktop").length ?? 0;
       const mobile = events?.filter((e) => e.device_type === "mobile").length ?? 0;
-// ... (omitting middle parts for clarity in multi_replace if I used it, but here I'm replacing a whole block)
-      const other = total - desktop - mobile;
-      const desktopPct = total > 0 ? Math.round(((desktop + other * 0.4) / total) * 100) : 38;
-      const mobilePct = total > 0 ? 100 - desktopPct : 62;
+      const other = (events?.length ?? 0) - desktop - mobile;
+      
+      const desktopPct = (events?.length ?? 0) > 0 ? Math.round(((desktop + other * 0.4) / (events?.length ?? 1)) * 100) : 38;
+      const mobilePct = (events?.length ?? 0) > 0 ? 100 - desktopPct : 62;
 
       // Group by country
       const countryMap: Record<string, number> = {};
@@ -183,50 +184,21 @@ export function useTopCodes(limit = 4) {
     queryKey: ["top_codes", user?.id, limits.analytics],
     enabled: !!user,
     queryFn: async () => {
-      // Get QR codes owned by user
+      // Get QR codes owned by user with their global scan counts
       const { data: qrCodes, error: qrError } = await supabase
         .from("qr_codes")
-        .select("id, name")
-        .eq("user_id", user?.id) as unknown as { data: { id: string, name: string }[] | null, error: unknown };
+        .select("id, name, scan_count")
+        .eq("user_id", user?.id)
+        .order("scan_count", { ascending: false })
+        .limit(limit);
 
       if (qrError) throw qrError;
       if (!qrCodes || qrCodes.length === 0) return [];
 
-      const qrIds = qrCodes.map(q => q.id);
-
-      // Count actual scan events for each QR code
-      let query = supabase
-        .from("scan_events")
-        .select("qr_code_id")
-        .in("qr_code_id", qrIds);
-
-      // For basic analytics (premium plan), limit to last 7 days
-      if (limits.analytics === "basic") {
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        query = query.gte("scanned_at", sevenDaysAgo.toISOString());
-      }
-
-      const { data: scanCounts, error: scanError } = await query as unknown as { data: { qr_code_id: string }[] | null, error: unknown };
-
-      if (scanError) throw scanError;
-
-      // Group scan counts by QR code ID
-      const countMap: Record<string, number> = {};
-      scanCounts?.forEach(scan => {
-        countMap[scan.qr_code_id] = (countMap[scan.qr_code_id] || 0) + 1;
-      });
-
-      // Combine QR codes with their scan counts
-      const result = qrCodes.map(qr => ({
+      return (qrCodes as any[]).map(qr => ({
         name: qr.name,
-        scans: countMap[qr.id] || 0
+        scans: qr.scan_count || 0
       }));
-
-      // Sort by scan count descending and limit
-      return result
-        .sort((a, b) => b.scans - a.scans)
-        .slice(0, limit);
     },
   });
 }
